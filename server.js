@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════════════════
-//  EVENT PLANNER — BACKEND SERVER (UPDATED CON FRONTEND)
-//  Node.js + Express + PostgreSQL + React Frontend Servido
+//  EVENT PLANNER — BACKEND SERVER (FIXED)
+//  Node.js + Express + PostgreSQL
 // ══════════════════════════════════════════════════════════════════════════════
 
 const express = require('express');
@@ -31,305 +31,110 @@ app.use(express.json());
 app.use(cors());
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  SERVIR FRONTEND (React)
-//  ¡AGREGADO PARA QUE FUNCIONE EL / (raíz)!
+//  SERVIR FRONTEND BÁSICO EN /
 // ══════════════════════════════════════════════════════════════════════════════
 
-// Servir archivos estáticos (si tenés una carpeta 'public' con React compilado)
-app.use(express.static(path.join(__dirname, 'public')));
+const htmlTemplate = require('fs').readFileSync(path.join(__dirname, 'index.html'), 'utf8') || `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EventPlanner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fdf8f0; 
+      color: #3d2e1a;
+      padding: 20px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    header { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 12px; 
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 { color: #c9a84c; font-size: 28px; }
+    .hero { text-align: center; padding: 60px 20px; }
+    h2 { font-size: 48px; margin-bottom: 20px; }
+    p { font-size: 18px; color: #7a6248; margin-bottom: 30px; }
+    .buttons { display: flex; gap: 12px; justify-content: center; }
+    button { 
+      padding: 12px 24px; 
+      border-radius: 8px; 
+      border: none; 
+      cursor: pointer; 
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .primary { background: #c9a84c; color: white; }
+    .secondary { background: white; border: 1.5px solid #e8dcc8; color: #c9a84c; }
+    .status { 
+      text-align: center; 
+      margin-top: 40px; 
+      padding: 20px; 
+      background: white; 
+      border-radius: 12px;
+    }
+    .status-ok { color: #7aad8a; }
+    .status-error { color: #c4707a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>✦ EventPlanner</h1>
+      <div style="display: flex; gap: 10px;">
+        <button class="secondary" onclick="alert('Ir a login')">Ingresar</button>
+        <button class="primary" onclick="alert('Ir a registro')">Registrarse</button>
+      </div>
+    </header>
+    
+    <div class="hero">
+      <h2>✦ EventPlanner</h2>
+      <p>Gestiona tu evento de forma fácil.<br/>Invitados, mesas, tareas, proveedores.</p>
+      <div class="buttons">
+        <button class="primary">Ingresar</button>
+        <button class="secondary">Crear cuenta</button>
+      </div>
+    </div>
+    
+    <div class="status">
+      <p>API Status: <span id="status">Verificando...</span></p>
+    </div>
+  </div>
+  
+  <script>
+    fetch('/api/health')
+      .then(r => r.json())
+      .then(d => {
+        const el = document.getElementById('status');
+        el.textContent = '✅ Funcionando';
+        el.className = 'status-ok';
+      })
+      .catch(e => {
+        const el = document.getElementById('status');
+        el.textContent = '❌ Error conectando API';
+        el.className = 'status-error';
+      });
+  </script>
+</body>
+</html>
+`;
 
-// Si alguien accede a /, servir el HTML del frontend
 app.get('/', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>EventPlanner</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #fdf8f0; color: #3d2e1a; }
-        #root { width: 100%; height: 100vh; }
-      </style>
-    </head>
-    <body>
-      <div id="root"></div>
-      <script>
-        // IMPORTANTE: Cambiar esta URL a tu servidor real en producción
-        const API_URL = window.location.origin + '/api';
-        
-        // React app inline (all-in-one)
-        const React = window.React || { useState: function() {}, useEffect: function() {} };
-      </script>
-      
-      <!-- Cargar React desde CDN (necesario para que funcione) -->
-      <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-      <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-      <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-      
-      <!-- Script del app (ver debajo cómo incluir) -->
-      <script type="text/babel">
-        const { useState, useEffect } = React;
-        
-        // App principal
-        function App() {
-          const [page, setPage] = useState('landing');
-          const [user, setUser] = useState(null);
-          
-          const C = {
-            bg: "#fdf8f0",
-            surface: "#fffdf8",
-            card: "#ffffff",
-            border: "#e8dcc8",
-            accent: "#c9a84c",
-            accentDark: "#a07830",
-            text: "#3d2e1a",
-            textMid: "#7a6248",
-            muted: "#b0998a",
-          };
-          
-          return (
-            <div style={{ minHeight: '100vh', background: C.bg }}>
-              {/* Header */}
-              <header style={{
-                background: C.card,
-                borderBottom: `1.5px solid ${C.border}`,
-                padding: '16px 32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-                <div style={{ fontSize: 24, color: C.accent, fontWeight: 700 }}>
-                  ✦ EventPlanner
-                </div>
-                {user ? (
-                  <button onClick={() => { localStorage.removeItem('token'); setUser(null); setPage('landing'); }}
-                    style={{ background: C.accent, color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer' }}>
-                    Salir
-                  </button>
-                ) : (
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button onClick={() => setPage('login')}
-                      style={{ background: 'transparent', border: '1.5px solid ' + C.border, color: C.textMid, padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
-                      Ingresar
-                    </button>
-                    <button onClick={() => setPage('register')}
-                      style={{ background: C.accent, color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
-                      Registrarse
-                    </button>
-                  </div>
-                )}
-              </header>
-              
-              {/* Content */}
-              <div style={{ maxWidth: 1200, margin: '0 auto', padding: 40 }}>
-                {page === 'landing' && (
-                  <div style={{ textAlign: 'center' }}>
-                    <h1 style={{ fontSize: 56, marginBottom: 20, color: C.text }}>
-                      ✦ EventPlanner
-                    </h1>
-                    <p style={{ fontSize: 18, color: C.textMid, marginBottom: 30, maxWidth: 600, margin: '0 auto 30px' }}>
-                      Gestiona tu evento de forma fácil: invitados, mesas, proveedores, todo en un lugar.
-                    </p>
-                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                      <button onClick={() => setPage('login')}
-                        style={{ background: C.accent, color: 'white', border: 'none', padding: '14px 32px', borderRadius: 12, cursor: 'pointer', fontSize: 16, fontWeight: 700 }}>
-                        Ingresar
-                      </button>
-                      <button onClick={() => setPage('register')}
-                        style={{ background: 'transparent', border: '1.5px solid ' + C.accent, color: C.accent, padding: '14px 32px', borderRadius: 12, cursor: 'pointer', fontSize: 16, fontWeight: 700 }}>
-                        Crear cuenta
-                      </button>
-                    </div>
-                  </div>
-                )}
-                
-                {page === 'login' && <LoginPage setPage={setPage} setUser={setUser} C={C} />}
-                {page === 'register' && <RegisterPage setPage={setPage} setUser={setUser} C={C} />}
-                {page === 'dashboard' && <Dashboard user={user} C={C} />}
-              </div>
-            </div>
-          );
-        }
-        
-        // Login Page
-        function LoginPage({ setPage, setUser, C }) {
-          const [email, setEmail] = useState('vale@mail.com');
-          const [password, setPassword] = useState('123456');
-          const [error, setError] = useState('');
-          const [loading, setLoading] = useState(false);
-          
-          const handleLogin = async () => {
-            setLoading(true);
-            setError('');
-            try {
-              const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-              });
-              if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || 'Login failed');
-              }
-              const data = await res.json();
-              localStorage.setItem('token', data.token);
-              setUser(data.user);
-              setPage('dashboard');
-            } catch (err) {
-              setError(err.message);
-            } finally {
-              setLoading(false);
-            }
-          };
-          
-          return (
-            <div style={{ maxWidth: 400, margin: '80px auto', background: C.card, borderRadius: 16, padding: 32, border: `1.5px solid ${C.border}` }}>
-              <h2 style={{ fontSize: 24, marginBottom: 24, color: C.accentDark }}>Bienvenido</h2>
-              
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 5, fontWeight: 600 }}>Email</label>
-                <input value={email} onChange={e => setEmail(e.target.value)} type="email"
-                  style={{ width: '100%', background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '12px 14px', fontSize: 16, outline: 'none' }} />
-              </div>
-              
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 5, fontWeight: 600 }}>Contraseña</label>
-                <input value={password} onChange={e => setPassword(e.target.value)} type="password"
-                  style={{ width: '100%', background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '12px 14px', fontSize: 16, outline: 'none' }} />
-              </div>
-              
-              {error && <p style={{ color: '#c4707a', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-              
-              <button onClick={handleLogin} disabled={loading}
-                style={{ width: '100%', background: C.accent, color: 'white', border: 'none', padding: '12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, marginBottom: 12 }}>
-                {loading ? 'Ingresando...' : 'Ingresar'}
-              </button>
-              
-              <p style={{ textAlign: 'center', fontSize: 13, color: C.muted }}>
-                ¿No tienes cuenta? <span onClick={() => setPage('register')} style={{ color: C.accent, cursor: 'pointer', fontWeight: 600 }}>Registrate</span>
-              </p>
-            </div>
-          );
-        }
-        
-        // Register Page
-        function RegisterPage({ setPage, setUser, C }) {
-          const [name, setName] = useState('');
-          const [email, setEmail] = useState('');
-          const [password, setPassword] = useState('');
-          const [role, setRole] = useState('client');
-          const [error, setError] = useState('');
-          const [loading, setLoading] = useState(false);
-          
-          const handleRegister = async () => {
-            setLoading(true);
-            setError('');
-            try {
-              const res = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, role }),
-              });
-              if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || 'Registration failed');
-              }
-              const data = await res.json();
-              localStorage.setItem('token', data.token);
-              setUser(data.user);
-              setPage('dashboard');
-            } catch (err) {
-              setError(err.message);
-            } finally {
-              setLoading(false);
-            }
-          };
-          
-          return (
-            <div style={{ maxWidth: 400, margin: '80px auto', background: C.card, borderRadius: 16, padding: 32, border: `1.5px solid ${C.border}` }}>
-              <h2 style={{ fontSize: 24, marginBottom: 24, color: C.accentDark }}>Crear cuenta</h2>
-              
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 5, fontWeight: 600 }}>Nombre</label>
-                <input value={name} onChange={e => setName(e.target.value)}
-                  style={{ width: '100%', background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '12px 14px', fontSize: 16, outline: 'none' }} />
-              </div>
-              
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 5, fontWeight: 600 }}>Email</label>
-                <input value={email} onChange={e => setEmail(e.target.value)} type="email"
-                  style={{ width: '100%', background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '12px 14px', fontSize: 16, outline: 'none' }} />
-              </div>
-              
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 5, fontWeight: 600 }}>Contraseña</label>
-                <input value={password} onChange={e => setPassword(e.target.value)} type="password"
-                  style={{ width: '100%', background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '12px 14px', fontSize: 16, outline: 'none' }} />
-              </div>
-              
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 5, fontWeight: 600 }}>Tipo</label>
-                <select value={role} onChange={e => setRole(e.target.value)}
-                  style={{ width: '100%', background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '12px 14px', fontSize: 16, outline: 'none' }}>
-                  <option value="client">Cliente</option>
-                  <option value="vendor">Proveedor</option>
-                </select>
-              </div>
-              
-              {error && <p style={{ color: '#c4707a', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-              
-              <button onClick={handleRegister} disabled={loading}
-                style={{ width: '100%', background: C.accent, color: 'white', border: 'none', padding: '12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, marginBottom: 12 }}>
-                {loading ? 'Creando...' : 'Crear cuenta'}
-              </button>
-              
-              <p style={{ textAlign: 'center', fontSize: 13, color: C.muted }}>
-                ¿Ya tienes cuenta? <span onClick={() => setPage('login')} style={{ color: C.accent, cursor: 'pointer', fontWeight: 600 }}>Ingresar</span>
-              </p>
-            </div>
-          );
-        }
-        
-        // Dashboard
-        function Dashboard({ user, C }) {
-          return (
-            <div>
-              <h2 style={{ fontSize: 32, marginBottom: 20, color: C.accentDark }}>Bienvenido, {user?.name}!</h2>
-              <p style={{ fontSize: 16, color: C.textMid, marginBottom: 20 }}>Tu rol: {user?.role}</p>
-              
-              <div style={{ background: C.card, border: `1.5px solid ${C.border}`, borderRadius: 16, padding: 32, textAlign: 'center' }}>
-                <p style={{ fontSize: 18, color: C.text, marginBottom: 16 }}>
-                  ✅ ¡API conectada y funcionando!
-                </p>
-                <p style={{ fontSize: 14, color: C.muted }}>
-                  Esta es una versión simplificada del frontend.
-                </p>
-                <p style={{ fontSize: 14, color: C.muted, marginTop: 8 }}>
-                  Para la versión completa con plano interactivo, invitados, proveedores y admin panel,
-                  usa el archivo event-planner.jsx completo.
-                </p>
-                <p style={{ fontSize: 12, color: C.muted, marginTop: 20, fontFamily: 'monospace' }}>
-                  API base: /api<br/>
-                  Token: {localStorage.getItem('token')?.slice(0, 20)}...
-                </p>
-              </div>
-            </div>
-          );
-        }
-        
-        // Render
-        ReactDOM.render(<App />, document.getElementById('root'));
-      </script>
-    </body>
-    </html>
-  `);
+  res.type('text/html').send(htmlTemplate);
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  AUTH MIDDLEWARE
 // ══════════════════════════════════════════════════════════════════════════════
+
 const auth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Token requerido' });
@@ -351,7 +156,6 @@ const adminOnly = (req, res, next) => {
 //  AUTH ENDPOINTS
 // ══════════════════════════════════════════════════════════════════════════════
 
-// Register
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password, role, eventName, eventDate, eventType, category, city, description } = req.body;
@@ -409,7 +213,6 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// Login
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -443,7 +246,6 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Get current user
 app.get('/api/auth/me', auth, async (req, res) => {
   try {
     const result = await pool.query('SELECT id, name, email, role, avatar FROM users WHERE id = $1', [req.user.id]);
@@ -780,11 +582,6 @@ app.delete('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// 404 handler para redirigir a /
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found', hint: 'Use /api/... for API endpoints' });
 });
 
 // Test DB connection and start
